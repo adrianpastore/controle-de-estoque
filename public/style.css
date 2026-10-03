@@ -1,0 +1,179 @@
+:root {
+  --fundo: #121417;
+  --painel: #1b1e23;
+  --painel-2: #23272e;
+  --borda: #2e333b;
+  --texto: #e7e9ec;
+  --texto-2: #9aa1ab;
+  --destaque: #e0a458;   /* cor de casca de pão */
+  --ok: #5fb37a;
+  --alerta: #e5b449;
+  --perigo: #e0645c;
+  --info: #6aa3d8;
+  --raio: 10px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--fundo); color: var(--texto); }
+body { font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+.topo {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 16px; background: var(--painel); border-bottom: 1px solid var(--borda);
+}
+.marca { font-weight: 700; color: var(--destaque); white-space: nowrap; }
+.menu { display: flex; gap: 4px; overflow-x: auto; }
+.menu a { padding: 6px 12px; border-radius: 8px; color: var(--texto-2); white-space: nowrap; }
+.menu a.ativo { background: var(--painel-2); color: var(--texto); }
+
+main { max-width: 1000px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 20px; margin: 4px 0 14px; }
+h2 { font-size: 16px; margin: 22px 0 10px; color: var(--texto-2); font-weight: 600; }
+
+/* Abas por empresa */
+.abas { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0 0 12px; border-bottom: 1px solid var(--borda); }
+/* Botão "Empresas": lista todas de A a Z com quantos produtos pedir */
+.todas-empresas { position: relative; }
+.todas-empresas summary { list-style: none; }
+.todas-empresas summary::-webkit-details-marker { display: none; }
+.todas-empresas[open] summary { color: var(--texto); }
+.painel-empresas {
+  position: absolute; z-index: 5; top: 100%; left: 0; margin-top: 4px;
+  width: min(340px, calc(100vw - 32px)); max-height: 60vh; overflow-y: auto;
+  background: var(--painel); border: 1px solid var(--borda); border-radius: var(--raio);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+}
+.empresa-linha {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%;
+  padding: 10px 14px; background: none; border: 0; border-bottom: 1px solid var(--borda);
+  text-align: left; cursor: pointer;
+}
+.empresa-linha:last-child { border-bottom: 0; }
+.empresa-linha:hover, .empresa-linha.ativo { background: var(--painel-2); }
+.empresa-linha b { font-size: 12px; color: var(--texto-2); white-space: nowrap; }
+.empresa-linha b.pedir { padding: 1px 8px; border-radius: 999px; background: #4a2422; color: #f2a19b; }
+.aba {
+  flex: none; padding: 10px 14px; cursor: pointer; background: none; border: 0;
+  border-bottom: 3px solid transparent; color: var(--texto-2); font-weight: 600; font-size: 16px;
+}
+.aba b { margin-left: 6px; font-size: 12px; padding: 1px 7px; border-radius: 999px; background: var(--painel-2); color: var(--texto-2); }
+.aba.ativo { color: var(--texto); border-bottom-color: var(--destaque); }
+.aba.pendente b { background: #4a3d1c; color: #f5d68a; }
+
+.abas, .filtros { scrollbar-width: none; }
+.abas::-webkit-scrollbar, .filtros::-webkit-scrollbar { display: none; }
+
+/* Filtros */
+.filtros { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 10px; }
+.chip {
+  flex: none; padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  background: var(--painel); border: 1px solid var(--borda); color: var(--texto-2);
+}
+.chip b { color: var(--texto); margin-left: 4px; }
+.chip.ativo { border-color: var(--destaque); color: var(--texto); }
+
+.busca {
+  width: 100%; padding: 11px 14px; margin-bottom: 12px;
+  background: var(--painel); border: 1px solid var(--borda); border-radius: var(--raio);
+}
+.busca:focus, .campo input:focus, .campo select:focus, .campo textarea:focus { outline: 2px solid var(--destaque); outline-offset: -1px; }
+
+/* Lista de produtos */
+.lista { display: flex; flex-direction: column; gap: 6px; }
+.item {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 10px 14px; background: var(--painel); border: 1px solid var(--borda); border-radius: var(--raio);
+}
+.item:hover { border-color: #444a54; }
+.item-corpo { flex: 1 1 260px; min-width: 0; display: flex; align-items: center; gap: 12px; }
+.ajustes { display: flex; align-items: center; gap: 6px; flex: none; }
+.ajustes label { display: flex; align-items: center; gap: 6px; color: var(--texto-2); font-size: 13px; }
+.ajustes input, .ajustes select {
+  padding: 7px 8px; background: var(--fundo); border: 1px solid var(--borda); border-radius: 8px;
+}
+.ajustes input { width: 64px; text-align: right; }
+.ajustes input:focus, .ajustes select:focus { outline: 2px solid var(--destaque); outline-offset: -1px; }
+.escolher-empresa {
+  flex: 0 1 220px; padding: 8px 10px; cursor: pointer;
+  background: var(--fundo); border: 1px dashed var(--alerta); border-radius: 8px;
+}
+.item .info { flex: 1; min-width: 0; }
+.item .nome { font-weight: 600; overflow-wrap: anywhere; }
+.item .sub { color: var(--texto-2); font-size: 13px; }
+.item .qtd { text-align: right; white-space: nowrap; }
+.item .qtd strong { font-size: 17px; }
+.item .qtd small { display: block; color: var(--texto-2); font-size: 12px; }
+.contador { color: var(--texto-2); font-size: 13px; margin: 0 0 8px; }
+
+.selo {
+  display: inline-block; padding: 1px 7px; margin: 2px 4px 0 0; border-radius: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: .02em;
+}
+.selo.perigo { background: #4a2523; color: #ffb3ad; }
+.selo.alerta { background: #4a3d1c; color: #f5d68a; }
+.selo.info   { background: #1f3549; color: #a9cdf0; }
+.selo.neutro { background: var(--painel-2); color: var(--texto-2); }
+.selo.ok     { background: #1f3a2a; color: #9fdcb2; }
+
+/* Formulário */
+.cartao { background: var(--painel); border: 1px solid var(--borda); border-radius: var(--raio); padding: 16px; }
+.grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.campo { display: flex; flex-direction: column; gap: 4px; }
+.campo label { font-size: 13px; color: var(--texto-2); }
+.campo input, .campo select, .campo textarea {
+  padding: 9px 11px; background: var(--fundo); border: 1px solid var(--borda); border-radius: 8px;
+}
+.campo textarea { min-height: 70px; resize: vertical; }
+.campo.largo { grid-column: 1 / -1; }
+.marcas { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; }
+.marcas label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.marcas input { width: 18px; height: 18px; accent-color: var(--destaque); }
+
+.acoes { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.botao {
+  padding: 10px 18px; border-radius: 8px; border: 1px solid var(--borda);
+  background: var(--painel-2); cursor: pointer; font-weight: 600;
+}
+.botao.primario { background: var(--destaque); border-color: var(--destaque); color: #1b1407; }
+.botao.entrada { background: #1f3a2a; border-color: var(--ok); color: #9fdcb2; }
+.botao.saida { background: #4a2523; border-color: var(--perigo); color: #ffb3ad; }
+.botao.excluir { margin-left: auto; background: none; border-color: var(--perigo); color: #ffb3ad; }
+.dica { color: var(--texto-2); font-size: 13px; margin: 12px 0 0; }
+.empresa-produto { color: var(--destaque); margin: -8px 0 12px; font-weight: 600; }
+.botao:disabled { opacity: .5; cursor: default; }
+.voltar { display: inline-block; color: var(--texto-2); margin-bottom: 8px; }
+
+.resumo-produto { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.resumo-produto .bloco { flex: 1; min-width: 130px; background: var(--painel); border: 1px solid var(--borda); border-radius: var(--raio); padding: 10px 14px; }
+.resumo-produto .bloco small { color: var(--texto-2); display: block; font-size: 12px; }
+.resumo-produto .bloco strong { font-size: 20px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--borda); }
+th { color: var(--texto-2); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.tabela-rolagem { overflow-x: auto; background: var(--painel); border: 1px solid var(--borda); border-radius: var(--raio); }
+.vazio { color: var(--texto-2); padding: 14px; }
+
+.aviso {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+  padding: 10px 18px; border-radius: 8px; background: var(--painel-2); border: 1px solid var(--borda);
+  box-shadow: 0 6px 20px rgba(0,0,0,.4); z-index: 50; max-width: calc(100% - 32px);
+}
+.aviso.erro { border-color: var(--perigo); }
+.aviso.sucesso { border-color: var(--ok); }
+
+@media (max-width: 520px) {
+  main { padding: 12px; }
+  .item { padding: 10px 12px; }
+  .escolher-empresa { flex-basis: 100%; }
+  .acoes .botao { flex: 1 1 auto; }
+}
+
+/* No computador a roda do mouse não rola para o lado: os filtros quebram linha */
+@media (min-width: 700px) {
+  .filtros { flex-wrap: wrap; overflow: visible; }
+}
+

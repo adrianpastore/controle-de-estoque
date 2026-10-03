@@ -1,0 +1,17 @@
+{
+  "name": "controle-de-estoque",
+  "version": "0.1.0",
+  "description": "Controle de estoque da padaria — roda na rede local",
+  "private": true,
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "importar": "node scripts/importar-planilha.js",
+    "empresas": "node scripts/separar-empresas.js"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1"
+  }
+}
