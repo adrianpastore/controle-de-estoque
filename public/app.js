@@ -19,6 +19,16 @@ const TIPOS = { entrada: 'Entrada', saida: 'Saída', ajuste: 'Ajuste', importaca
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = (n) => (n == null ? '—' : Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 3 }));
 const qtd = (n, un) => `${num(n)}${un ? ' ' + esc(un) : ''}`;
+// Quantidade guardada nos lotes → texto: "3 cx + 4 und" com fator, "2,5 kg" sem. (Igual a formatar no servidor.)
+function qtdProduto(base, p) {
+  if (!p.fator) return qtd(base, p.unidade);
+  const sinal = base < 0 ? '−' : '';
+  const total = Math.abs(base);
+  const cheias = Math.floor(Math.round(total / p.fator * 1000) / 1000);
+  const soltas = Math.round((total - cheias * p.fator) * 1000) / 1000;
+  const partes = [cheias ? qtd(cheias, p.unidade) : '', soltas ? qtd(soltas, p.unidade_menor) : ''].filter(Boolean);
+  return sinal + (partes.join(' + ') || qtd(0, p.unidade));
+}
 const data = (d) => (d ? d.slice(0, 10).split('-').reverse().join('/') : '—');
 const dataHora = (d) => (d ? `${data(d)} ${d.slice(11, 16)}` : '—');
 
@@ -54,7 +64,8 @@ function diasAte(validade) {
 function quantoPedir(p) {
   if (!p.ativo) return null;
   if (!p.nao_contado && p.estoque_minimo != null && p.estoque < p.estoque_minimo) {
-    return Math.round((p.estoque_minimo - p.estoque) * 1000) / 1000;
+    const falta = p.estoque_minimo - p.estoque;
+    return p.fator ? Math.ceil(falta - 1e-9) : Math.round(falta * 1000) / 1000; // com fator, pede caixas inteiras
   }
   return p.em_falta ? 0 : null;
 }
@@ -235,7 +246,7 @@ function itemDaLista(p) {
           <div>${selos(p)}</div>
         </div>
         <div class="qtd">
-          <strong>${p.nao_contado && !p.estoque ? '—' : qtd(p.estoque, p.unidade)}</strong>
+          <strong>${p.nao_contado && !p.estoque ? '—' : qtdProduto(p.estoque_base, p)}</strong>
           ${p.validade_proxima ? `<small>val. ${data(p.validade_proxima)}</small>` : ''}
         </div>
       </a>
@@ -270,7 +281,7 @@ async function paginaProduto(id) {
     ${novo ? '' : `
     <p class="empresa-produto">${p.empresa ? esc(p.empresa) : 'Sem empresa'}</p>
     <div class="resumo-produto">
-      <div class="bloco"><small>Em estoque</small><strong>${p.nao_contado && !p.estoque ? 'tem bastante' : qtd(p.estoque, p.unidade)}</strong></div>
+      <div class="bloco"><small>Em estoque</small><strong>${p.nao_contado && !p.estoque ? 'tem bastante' : qtdProduto(p.estoque_base, p)}</strong></div>
       <div class="bloco"><small>Mínimo</small><strong>${p.estoque_minimo == null ? 'sem' : qtd(p.estoque_minimo, p.unidade)}</strong></div>
       <div class="bloco"><small>Pedir</small><strong>${quantoPedir(p) ? qtd(quantoPedir(p), p.unidade) : quantoPedir(p) === 0 ? 'sim' : 'não'}</strong></div>
       <div class="bloco"><small>Vence primeiro</small><strong>${data(p.validade_proxima)}</strong></div>
@@ -280,7 +291,10 @@ async function paginaProduto(id) {
     <h2>Lançar</h2>
     <form class="cartao" id="form-mov" autocomplete="off">
       <div class="grade">
-        <div class="campo"><label>Quantidade${un}</label><input name="quantidade" inputmode="decimal" required placeholder="ex.: 2 ou 0,5"></div>
+        ${p.fator ? `
+        <div class="campo"><label>${esc(p.unidade || 'Embalagem')} (1 = ${num(p.fator)} ${esc(p.unidade_menor)})</label><input name="quantidade" inputmode="decimal" placeholder="ex.: 2"></div>
+        <div class="campo"><label>${esc(p.unidade_menor)} soltas</label><input name="quantidade_menor" inputmode="decimal" placeholder="ex.: 4"></div>` : `
+        <div class="campo"><label>Quantidade${un}</label><input name="quantidade" inputmode="decimal" required placeholder="ex.: 2 ou 0,5"></div>`}
         <div class="campo"><label>Validade (opcional, na entrada)</label><input name="validade" type="date"></div>
         <div class="campo largo"><label>Observação (opcional)</label><input name="observacao"></div>
       </div>
@@ -289,7 +303,7 @@ async function paginaProduto(id) {
         <button class="botao saida" type="button" data-tipo="saida">− Saída</button>
         <button class="botao" type="button" data-tipo="ajuste">= Ajustar para este valor</button>
       </div>
-      <p class="dica">Entrada soma e saída tira. <b>Ajustar</b> é para quando você contou e o sistema está diferente: o estoque passa a ser exatamente o número digitado.</p>
+      <p class="dica">Entrada soma e saída tira. <b>Ajustar</b> é para quando você contou e o sistema está diferente: o estoque passa a ser exatamente o número digitado.${p.fator ? ` Pode preencher só ${esc(p.unidade || 'embalagem')}, só ${esc(p.unidade_menor)} ou os dois (ex.: 3 ${esc(p.unidade || '')} e 4 ${esc(p.unidade_menor)}).` : ''}</p>
     </form>`}
 
     <h2>Dados do produto</h2>
@@ -300,6 +314,8 @@ async function paginaProduto(id) {
           <option value="">Sem empresa</option>${opcoesEmpresa(p.empresa_id)}<option value="nova">+ Nova empresa…</option>
         </select></div>
         <div class="campo"><label>Unidade</label><input name="unidade" list="l-un" value="${esc(p.unidade)}" placeholder="cx, pct, und, kg…"></div>
+        <div class="campo"><label>Quantas unidades vêm em 1 ${esc(p.unidade || 'embalagem')}? (opcional)</label><input name="fator" inputmode="decimal" value="${p.fator ?? ''}" placeholder="vazio = não separa"></div>
+        <div class="campo"><label>Nome da unidade menor</label><input name="unidade_menor" list="l-un" value="${esc(p.unidade_menor)}" placeholder="und"></div>
         <div class="campo"><label>Estoque mínimo</label><input name="estoque_minimo" inputmode="decimal" value="${p.estoque_minimo ?? ''}" placeholder="vazio = sem mínimo"></div>
         <div class="campo"><label>Fornecedor</label><input name="fornecedor" list="l-forn" value="${esc(p.fornecedor)}"></div>
         <div class="campo"><label>Seção</label><input name="secao" list="l-sec" value="${esc(p.secao)}"></div>
@@ -324,13 +340,13 @@ async function paginaProduto(id) {
     <h2>Lotes com saldo</h2>
     <div class="tabela-rolagem">${p.lotes.length ? `
       <table><thead><tr><th>Validade</th><th>Quantidade</th><th>Entrada</th></tr></thead><tbody>
-      ${p.lotes.map((l) => `<tr><td>${data(l.validade)}</td><td>${qtd(l.quantidade, p.unidade)}</td><td>${dataHora(l.criado_em)}</td></tr>`).join('')}
+      ${p.lotes.map((l) => `<tr><td>${data(l.validade)}</td><td>${qtdProduto(l.quantidade, p)}</td><td>${dataHora(l.criado_em)}</td></tr>`).join('')}
       </tbody></table>` : '<div class="vazio">Nenhum lote com saldo.</div>'}</div>
 
     <h2>Últimas movimentações</h2>
     <div class="tabela-rolagem">${p.movimentacoes.length ? `
       <table><thead><tr><th>Quando</th><th>Tipo</th><th>Qtd</th><th>Quem / obs.</th></tr></thead><tbody>
-      ${p.movimentacoes.map((m) => `<tr><td>${dataHora(m.criado_em)}</td><td>${TIPOS[m.tipo] || esc(m.tipo)}</td><td>${m.tipo !== 'importacao' && m.quantidade > 0 ? '+' : ''}${qtd(m.quantidade, p.unidade)}</td><td>${esc([m.usuario, m.observacao].filter(Boolean).join(' — '))}</td></tr>`).join('')}
+      ${p.movimentacoes.map((m) => `<tr><td>${dataHora(m.criado_em)}</td><td>${TIPOS[m.tipo] || esc(m.tipo)}</td><td>${m.tipo !== 'importacao' && m.quantidade > 0 ? '+' : ''}${qtdProduto(m.quantidade, p)}</td><td>${esc([m.usuario, m.observacao].filter(Boolean).join(' — '))}</td></tr>`).join('')}
       </tbody></table>` : '<div class="vazio">Nenhuma movimentação.</div>'}</div>`}`;
 
   const form = document.getElementById('form');
@@ -385,8 +401,8 @@ async function paginaProduto(id) {
     formMov.querySelectorAll('button').forEach((x) => (x.disabled = true));
     try {
       const r = await api(`/api/produtos/${id}/movimentar`, { method: 'POST', body: corpo });
-      const q = qtd(Number(String(corpo.quantidade).replace(',', '.')), p.unidade);
-      avisar(corpo.tipo === 'ajuste' ? `Ajustado para ${q}` : `${TIPOS[corpo.tipo]} de ${q} lançada — agora tem ${qtd(r.estoque, p.unidade)}`);
+      const q = qtdProduto(r.lancado, p);
+      avisar(corpo.tipo === 'ajuste' ? `Ajustado para ${q}` : `${TIPOS[corpo.tipo]} de ${q} lançada — agora tem ${qtdProduto(r.estoque_base, p)}`);
       await paginaProduto(id);
     } catch (erro) {
       avisar(erro.message, 'erro');

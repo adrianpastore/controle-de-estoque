@@ -17,6 +17,13 @@ Substituir a planilha "Estoque Padaria" por um sistema simples, usado no celular
 - Testar mudanças numa **cópia do banco** (rodar o servidor em outra porta com `PORTA=3999`), nunca lançando testes no banco real.
 - A planilha original tem uma **senha anotada na última linha**: nunca importar nem exibir essa linha.
 
+## Onde está e como continuar de outro computador
+
+- Código: **https://github.com/adrianpastore/controle-de-estoque** (branch `main`). Commit ao fim de cada etapa.
+- **O banco não vai para o git** (`dados/` está no `.gitignore`): os dados reais só existem no **Caixa03**, em `dados/estoque.db`. Em outro PC, `git clone` + `npm install` + `npm start` cria um banco **vazio** (as tabelas se criam sozinhas). Para ter produtos lá, copiar o `estoque.db` do Caixa03 (ou rodar `npm run importar` com a planilha `Estoque Padaria.xlsx`, que também fica fora do git).
+- Mexeu no código em outro PC: commit + push lá, e no Caixa03 `git pull` e reabrir o `iniciar.bat`. As migrações em `src/db.js` rodam sozinhas no banco real ao iniciar (fazer backup antes, se a migração mexer em dados).
+- No Caixa03 o git não está no PATH: usar `"C:Program FilesGitcmdgit.exe"`.
+
 ## Como rodar
 
 - Abrir o `iniciar.bat` (ou `npm start`). Porta **3000**.
@@ -42,8 +49,10 @@ Substituir a planilha "Estoque Padaria" por um sistema simples, usado no celular
 ## Como o sistema funciona
 
 - **Estoque = soma dos lotes.** Cada entrada cria um lote (com validade opcional). Saída tira primeiro do lote que vence antes.
+- **Caixa x unidade (`fator`, `unidade_menor`):** produto com fator (ex.: 1 cx = 12 und) guarda lotes e movimentações **na unidade menor**; a tela mostra "3 cx + 4 und" e o lançamento tem dois campos (cx e und soltas, pode usar um ou os dois). Sem fator, tudo fica na unidade do produto, como antes. Na API, `estoque_base` = como está nos lotes e `estoque` = na unidade do produto (= `estoque_base / fator`). **Mínimo e Pedir são sempre na unidade do produto** (cx/fardo); com fator, o Pedir arredonda para cima (caixas inteiras). Ligar/desligar o fator na ficha converte os lotes e o histórico daquele produto; trocar um fator por outro (12 → 24) mantém as unidades.
+- O texto da quantidade é montado igual em dois lugares: `formatar` (src/server.js) e `qtdProduto` (public/app.js).
 - **Movimentações** guardam a quantidade com sinal: entrada +, saída −, ajuste = diferença ("contou X, sistema tinha Y").
-- **Empresas = abas.** Vieram da coluna Fornecedor da planilha: grafias diferentes viram uma só (ex.: "fritz", "fritz e frida" → Fritz Frida). Com vários fornecedores, vale o primeiro. O texto original continua no campo `fornecedor`. As 6 maiores viram abas; o resto fica em "Mais empresas". Produto sem empresa fica na aba "Sem empresa", onde dá para escolher.
+- **Empresas = abas.** Vieram da coluna Fornecedor da planilha: grafias diferentes viram uma só (ex.: "fritz", "fritz e frida" → Fritz Frida). Com vários fornecedores, vale o primeiro. O texto original continua no campo `fornecedor`. As 6 maiores viram abas; o botão **"Empresas"** lista todas de A a Z com quantos produtos estão para pedir (`pedir` em `/api/empresas`). Produto sem empresa fica na aba "Sem empresa", onde dá para escolher.
 - **Pedir é automático:** quando estoque < mínimo, pedir = mínimo − estoque (mesma conta da planilha). A caixinha "Pedir mesmo sem estar abaixo do mínimo" (`em_falta`) é a marcação manual e se desmarca sozinha quando entra mercadoria.
 - **"Tem bastante"** (`nao_contado`): produto não contado; não entra no Pedir. Um ajuste tira essa marca.
 - Mínimo e unidade podem ser editados direto na lista.
@@ -76,9 +85,11 @@ Substituir a planilha "Estoque Padaria" por um sistema simples, usado no celular
 
 ### Pontos combinados em 03/10/2026 (fazer nesta ordem)
 - [x] **1.5 Botão "Empresas"**: lista todas de A a Z com quantos produtos estão para pedir. As 6 maiores continuam como abas.
-- [ ] **1.4 Caixa ou unidade**: cada produto ganha um fator (ex.: 1 cx = 12 und). O estoque é guardado na unidade menor e a tela mostra "3 cx + 4 und". Na entrada e na saída escolhe-se cx/fardo ou und. **Mínimo e Pedir continuam em caixa/fardo.** Mexe no banco: fazer antes do XML. Em 03/10/2026 o estoque foi **zerado** (lotes e histórico apagados; backup `dados/backup/antes-de-zerar-2026-10-03.db`) para alimentar do zero, então não há estoque antigo para converter.
+- [x] **1.4 Caixa ou unidade**: feito (ver "Como o sistema funciona"). Testado só pela API numa cópia do banco; **falta o dono testar na tela** e preencher o fator nos produtos que precisam. Em 03/10/2026 o estoque foi **zerado** (lotes e histórico apagados; backup `dados/backup/antes-de-zerar-2026-10-03.db`) para alimentar do zero, então não há estoque antigo para converter.
 - [ ] **1.3 Validades**: (a) corrigir ou excluir uma validade/lote lançado errado **e** (b) dar baixa em vencidos como perda (sai do estoque e fica registrado como "vencido").
 - [ ] **1.2 Métodos de baixa**: baixa rápida na lista → baixa de vários produtos de uma vez → listas prontas → câmera (fase 4).
 - [ ] **1.1 Entrada**: manual + XML da NF-e. IA por foto **não**: é paga e manda dados para a internet. Só reavaliar se o dono pedir.
+
+**Próximo passo:** 1.3 (validades).
 
 **Ordem sugerida depois disso:** login → backup → IP fixo → lista de pedido → XML da NF-e.

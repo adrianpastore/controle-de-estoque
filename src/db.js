@@ -66,4 +66,10 @@ if (!temEmpresa) {
 }
 db.exec('CREATE INDEX IF NOT EXISTS idx_produtos_empresa ON produtos(empresa_id)');
 
+// Migração: caixa x unidade. fator = quantas unidades menores vêm em 1 unidade (ex.: 1 cx = 12 und).
+// Com fator, lotes e movimentações guardam a quantidade na unidade menor; sem fator, na unidade normal.
+const colunas = db.prepare('PRAGMA table_info(produtos)').all().map((c) => c.name);
+if (!colunas.includes('fator')) db.exec('ALTER TABLE produtos ADD COLUMN fator REAL');
+if (!colunas.includes('unidade_menor')) db.exec('ALTER TABLE produtos ADD COLUMN unidade_menor TEXT');
+
 module.exports = db;
