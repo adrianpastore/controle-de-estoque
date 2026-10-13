@@ -1,0 +1,3 @@
+# O gancho do git roda no sh: precisa de quebra de linha LF mesmo no Windows.
+.githooks/* text eol=lf
+*.bat text eol=crlf
