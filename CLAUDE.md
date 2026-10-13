@@ -14,7 +14,7 @@ Substituir a planilha "Estoque Padaria" por um sistema simples, usado no celular
 - **Passo a passo:** o dono quer testar cada etapa antes de seguir para a próxima.
 - **Explicações em português, simples.** Visual em **tons escuros**, funcionando bem no celular e no PC.
 - **Antes de mexer no banco real** (migração, script, separação em massa), fazer backup em `dados/backup/`.
-- Testar mudanças numa **cópia do banco**: `BANCO=caminhodacopia.db PORTA=3999 npm start` (cópia feita com `VACUUM INTO`), nunca lançando testes no banco real. Testes automáticos: `npm test` (sobem o servidor num banco vazio temporário).
+- Testar mudanças numa **cópia do banco**: `BANCO=C:\temp\copia.db PORTA=3999 npm start` (cópia feita com `VACUUM INTO`), nunca lançando testes no banco real. Testes automáticos: `npm test` (sobem o servidor num banco vazio temporário).
 - A planilha original tem uma **senha anotada na última linha**: nunca importar nem exibir essa linha.
 
 ## Onde está e como continuar de outro computador
@@ -22,7 +22,7 @@ Substituir a planilha "Estoque Padaria" por um sistema simples, usado no celular
 - Código: **https://github.com/adrianpastore/controle-de-estoque** (branch `main`). Commit ao fim de cada etapa.
 - **O banco não vai para o git** (`dados/` está no `.gitignore`): os dados reais só existem no **Caixa03**, em `dados/estoque.db`. Em outro PC, `git clone` + `npm install` + `npm start` cria um banco **vazio** (as tabelas se criam sozinhas). Para ter produtos lá, copiar o `estoque.db` do Caixa03 (ou rodar `npm run importar` com a planilha `Estoque Padaria.xlsx`, que também fica fora do git).
 - Mexeu no código em outro PC: commit + push lá, e no Caixa03 `git pull` e reabrir o `iniciar.bat`. As migrações em `src/db.js` rodam sozinhas no banco real ao iniciar (fazer backup antes, se a migração mexer em dados).
-- No Caixa03 o git não está no PATH: usar `"C:Program FilesGitcmdgit.exe"`.
+- No Caixa03 o git não está no PATH: usar `"C:\Program Files\Git\cmd\git.exe"`.
 
 ## Como rodar
 
