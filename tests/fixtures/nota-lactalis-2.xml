@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- NF-e FICTÍCIA para testes (dados inventados). Só a NFe, sem o nfeProc (sem protocolo), do mesmo fornecedor da nota 1. -->
+<NFe xmlns="http://www.portalfiscal.inf.br/nfe">
+  <infNFe Id="NFe43261011222333000181550010000460021876543215" versao="4.00">
+    <ide>
+      <cUF>43</cUF><cNF>87654321</cNF><natOp>VENDA DE MERCADORIA</natOp><mod>55</mod><serie>1</serie><nNF>46002</nNF>
+      <dhEmi>2026-10-11T14:02:00-03:00</dhEmi><tpNF>1</tpNF><tpAmb>1</tpAmb><finNFe>1</finNFe>
+    </ide>
+    <emit>
+      <CNPJ>11222333000181</CNPJ>
+      <xNome>LACTALIS TESTE COMERCIO DE LATICINIOS LTDA</xNome>
+    </emit>
+    <dest><CNPJ>99888777000166</CNPJ><xNome>PADARIA FICTICIA LTDA</xNome></dest>
+    <det nItem="1">
+      <prod>
+        <cProd>1001</cProd><cEAN>SEM GTIN</cEAN><xProd>LEITE ELEGE INTEGRAL 1L CX C/12</xProd>
+        <uCom>CX</uCom><qCom>2.0000</qCom><vUnCom>61.2000000000</vUnCom><vProd>122.40</vProd>
+        <cEANTrib>SEM GTIN</cEANTrib><uTrib>CX</uTrib><qTrib>2.0000</qTrib>
+      </prod>
+    </det>
+    <det nItem="2">
+      <prod>
+        <cProd>1003</cProd><cEAN>SEM GTIN</cEAN><xProd>QUEIJO MUSSARELA &amp; PRATO FATIADO KG</xProd>
+        <uCom>KG</uCom><qCom>2.5000</qCom><vUnCom>33.5000000000</vUnCom><vProd>83.75</vProd>
+        <cEANTrib>SEM GTIN</cEANTrib><uTrib>KG</uTrib><qTrib>2.5000</qTrib>
+      </prod>
+    </det>
+    <det nItem="3">
+      <prod>
+        <cProd>9999</cProd><cEAN>SEM GTIN</cEAN><xProd>BONIFICACAO EXPOSITOR PROMOCIONAL</xProd>
+        <uCom>UN</uCom><qCom>1.0000</qCom><vUnCom>0.0100000000</vUnCom><vProd>0.01</vProd>
+      </prod>
+    </det>
+    <total><ICMSTot><vProd>206.16</vProd><vNF>206.16</vNF></ICMSTot></total>
+  </infNFe>
+</NFe>

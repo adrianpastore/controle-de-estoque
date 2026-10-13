@@ -139,6 +139,9 @@ app.put('/api/produtos/:id', (req, res) => {
       for (const t of ['lotes', 'movimentacoes']) {
         db.prepare(`UPDATE ${t} SET quantidade = ROUND(quantidade * ?, 6) WHERE produto_id = ?`).run(escala, req.params.id);
       }
+      // o custo é por unidade do lote e a conversão da nota é na unidade do lote: mudam junto
+      db.prepare('UPDATE lotes SET custo_unit = custo_unit / ? WHERE produto_id = ? AND custo_unit IS NOT NULL').run(escala, req.params.id);
+      db.prepare('UPDATE nfe_associacoes SET multiplicador = ROUND(multiplicador * ?, 6) WHERE produto_id = ?').run(escala, req.params.id);
     }
     db.exec('COMMIT');
   } catch (e) {

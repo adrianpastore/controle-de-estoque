@@ -7,11 +7,17 @@
   "scripts": {
     "start": "node src/server.js",
     "importar": "node scripts/importar-planilha.js",
-    "empresas": "node scripts/separar-empresas.js"
+    "empresas": "node scripts/separar-empresas.js",
+    "vendor": "node scripts/vendor.js",
+    "test": "node --test"
   },
   "type": "commonjs",
   "dependencies": {
+    "@zxing/library": "^0.23.0",
     "exceljs": "^4.4.0",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "fast-xml-parser": "^5.11.2",
+    "node-forge": "^1.4.0",
+    "xml-crypto": "^6.3.3"
   }
 }
