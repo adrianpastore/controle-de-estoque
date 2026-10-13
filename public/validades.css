@@ -1,1 +1,28 @@
 /* Estilos de validades. Usa as variáveis de style.css (tons escuros). */
+
+.botao.pequeno { padding: 7px 12px; font-size: 13px; }
+
+/* Ficha do produto: lotes com saldo */
+.lotes { display: flex; flex-direction: column; gap: 6px; }
+.lote { padding: 10px 14px; background: var(--painel); border: 1px solid var(--borda); border-radius: var(--raio); }
+.lote-linha { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lote-info small { color: var(--texto-2); font-size: 12px; }
+.lote-qtd { font-size: 17px; white-space: nowrap; }
+.lote-acoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.botao.excluir-lote { background: none; border-color: var(--perigo); color: #ffb3ad; }
+.lote-form { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--borda); }
+.lote-form input:disabled { opacity: .4; }
+.marca-sem { display: flex; align-items: center; gap: 6px; cursor: pointer; margin-top: 24px; }
+.marca-sem input { width: 18px; height: 18px; accent-color: var(--destaque); }
+
+/* Página Validades */
+.contagem { margin-left: 4px; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--painel-2); color: var(--texto); }
+.validade-dia { font-size: 14px; margin: 16px 0 6px; color: var(--texto-2); font-weight: 600; }
+.validade-dia.vencido { color: #ffb3ad; }
+.validade-dia.perto { color: #f5d68a; }
+.validade-item .botao { flex: none; }
+
+@media (max-width: 520px) {
+  .lote-acoes .botao, .validade-item .botao { flex: 1 1 auto; }
+  .marca-sem { margin-top: 0; }
+}

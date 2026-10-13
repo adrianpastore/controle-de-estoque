@@ -13,7 +13,10 @@ const FILTROS = [
   ['inativos', 'Não pedir'],
 ];
 
-const TIPOS = { entrada: 'Entrada', saida: 'Saída', ajuste: 'Ajuste', importacao: 'Importação' };
+const TIPOS = {
+  entrada: 'Entrada', saida: 'Saída', ajuste: 'Ajuste', importacao: 'Importação',
+  perda: 'Vencido (perda)', correcao: 'Correção de lote',
+};
 
 // ---------- utilitários ----------
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -338,10 +341,7 @@ async function paginaProduto(id) {
 
     ${novo ? '' : `
     <h2>Lotes com saldo</h2>
-    <div class="tabela-rolagem">${p.lotes.length ? `
-      <table><thead><tr><th>Validade</th><th>Quantidade</th><th>Entrada</th></tr></thead><tbody>
-      ${p.lotes.map((l) => `<tr><td>${data(l.validade)}</td><td>${qtdProduto(l.quantidade, p)}</td><td>${dataHora(l.criado_em)}</td></tr>`).join('')}
-      </tbody></table>` : '<div class="vazio">Nenhum lote com saldo.</div>'}</div>
+    ${tabelaLotes(p)}
 
     <h2>Últimas movimentações</h2>
     <div class="tabela-rolagem">${p.movimentacoes.length ? `
@@ -390,6 +390,8 @@ async function paginaProduto(id) {
       selEmpresa.innerHTML = `<option value="">Sem empresa</option>${opcoesEmpresa(emp ? emp.id : p.empresa_id)}<option value="nova">+ Nova empresa…</option>`;
     } catch (e) { selEmpresa.value = p.empresa_id ?? ''; avisar(e.message, 'erro'); }
   };
+
+  if (!novo) ligarLotes(p, () => paginaProduto(id)); // corrigir / excluir / baixa como vencido (validades.js)
 
   const formMov = document.getElementById('form-mov');
   if (!formMov) return;
