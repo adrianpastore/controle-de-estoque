@@ -2,7 +2,7 @@ const os = require('node:os');
 const path = require('node:path');
 const express = require('express');
 const db = require('./db');
-const { SELECT_PRODUTO, arredondar, formatar, lerQuantidade, consumirLotes, novoLote, registrar, transacao } = require('./estoque');
+const { SELECT_PRODUTO, arredondar, formatar, lerQuantidade, consumirLotes, novoLote, registrar, transacao, ajustarPara } = require('./estoque');
 
 const PORTA = Number(process.env.PORTA) || 3000;
 const app = express();
@@ -219,12 +219,7 @@ app.post('/api/produtos/:id/movimentar', (req, res) => {
       consumirLotes(p.id, quantidade);
       registrar(p.id, 'saida', -quantidade, observacao);
     } else {
-      const diferenca = arredondar(quantidade - estoque);
-      if (diferenca > 0) novoLote(p.id, diferenca, validade);
-      if (diferenca < 0) consumirLotes(p.id, -diferenca);
-      const nota = `contou ${formatar(quantidade, p)} (sistema tinha ${formatar(estoque, p)})`;
-      registrar(p.id, 'ajuste', diferenca, observacao ? `${nota} — ${observacao}` : nota);
-      db.prepare('UPDATE produtos SET nao_contado = 0 WHERE id = ?').run(p.id);
+      ajustarPara(p, quantidade, validade, observacao);
     }
   });
   const { n } = db.prepare('SELECT COALESCE(SUM(quantidade), 0) n FROM lotes WHERE produto_id = ?').get(p.id);
@@ -235,6 +230,7 @@ app.post('/api/produtos/:id/movimentar', (req, res) => {
 require('./rotas/validades')(app);
 require('./rotas/baixa')(app);
 require('./rotas/nfe')(app);
+require('./rotas/contagem')(app);
 
 app.listen(PORTA, '0.0.0.0', () => {
   const ips = Object.values(os.networkInterfaces()).flat()

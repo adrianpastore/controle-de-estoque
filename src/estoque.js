@@ -61,6 +61,19 @@ const registrar = (produtoId, tipo, quantidade, observacao = null, notaId = null
   db.prepare('INSERT INTO movimentacoes (produto_id, tipo, quantidade, observacao, nota_id) VALUES (?,?,?,?,?)')
     .run(produtoId, tipo, quantidade, observacao, notaId);
 
+// Ajuste: contou "quantidade" (na unidade dos lotes) e o estoque passa a ser isso. Registra a diferença
+// e tira a marca "tem bastante" (agora foi contado). Chamar dentro de transacao().
+function ajustarPara(p, quantidade, validade = null, observacao = null) {
+  const estoque = arredondar(p.estoque_base);
+  const diferenca = arredondar(quantidade - estoque);
+  if (diferenca > 0) novoLote(p.id, diferenca, validade);
+  if (diferenca < 0) consumirLotes(p.id, -diferenca);
+  const nota = `contou ${formatar(quantidade, p)} (sistema tinha ${formatar(estoque, p)})`;
+  registrar(p.id, 'ajuste', diferenca, observacao ? `${nota} — ${observacao}` : nota);
+  db.prepare('UPDATE produtos SET nao_contado = 0 WHERE id = ?').run(p.id);
+  return diferenca;
+}
+
 // Roda fn dentro de uma transação: tudo ou nada.
 function transacao(fn) {
   db.exec('BEGIN');
@@ -80,5 +93,5 @@ const hoje = () => {
 };
 
 module.exports = {
-  SELECT_PRODUTO, arredondar, buscarProduto, formatar, lerQuantidade, consumirLotes, novoLote, registrar, transacao, hoje,
+  SELECT_PRODUTO, arredondar, buscarProduto, formatar, lerQuantidade, consumirLotes, novoLote, registrar, transacao, hoje, ajustarPara,
 };
