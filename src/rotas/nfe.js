@@ -52,7 +52,11 @@ function sugerir(nota, item) {
   if (assoc?.ignorar) return { acao: 'ignorar', origem: 'lembrada' };
   if (assoc?.produto_id) {
     const p = buscarProduto(assoc.produto_id);
-    if (p) return { acao: 'produto', origem: 'lembrada', produto: resumoProduto(p), multiplicador: assoc.multiplicador };
+    if (p) {
+      const diferente = textoLimpo(assoc.unidade_nota).toLowerCase() !== textoLimpo(item.unidade).toLowerCase();
+      return { acao: 'produto', origem: 'lembrada', produto: resumoProduto(p), multiplicador: diferente ? 1 : assoc.multiplicador,
+        ...(diferente ? { aviso: 'unidade diferente da última nota: confira' } : {}) };
+    }
   }
   if (item.ean) {
     const p = db.prepare(`SELECT id FROM produtos WHERE TRIM(codigo_barras) = ? ORDER BY ativo DESC, id LIMIT 1`).get(item.ean);
@@ -164,6 +168,9 @@ module.exports = function (app) {
       if (e.acao === 'produto') {
         produto = buscarProduto(Number(e.produto_id));
         if (!produto) return res.status(400).json({ erro: `${nome}: produto não encontrado` });
+        if ('fator' in e && (Number(e.fator) || 1) !== (Number(produto.fator) || 1)) {
+          return res.status(409).json({ erro: `O produto ${produto.nome} mudou (caixa/unidade) enquanto a nota estava aberta. Abra a nota de novo.` });
+        }
       } else {
         novo = {
           nome: textoLimpo(e.novo?.nome) || item.descricao,

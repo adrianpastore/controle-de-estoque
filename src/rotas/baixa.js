@@ -63,6 +63,9 @@ function gravarItens(listaId, itens) {
 module.exports = function (app) {
   // Baixa de vários produtos de uma vez: confere tudo antes; se algum não tem estoque, nada é lançado.
   app.post('/api/baixa', (req, res) => {
+    const operacaoId = typeof req.body?.operacao_id === 'string' ? req.body.operacao_id.trim() : '';
+    const anterior = operacaoId && db.prepare('SELECT resposta FROM operacoes WHERE id = ?').get(operacaoId);
+    if (anterior) return res.json(JSON.parse(anterior.resposta));
     const { itens, erro } = lerItens(req.body?.itens);
     if (erro) return res.status(400).json({ erro });
     const observacao = textoLimpo(req.body.observacao).slice(0, 300) || null;
@@ -75,16 +78,21 @@ module.exports = function (app) {
       return res.status(400).json({ erro: `Nada foi lançado. Estoque não dá para: ${lista}`, faltando });
     }
 
-    transacao(() => {
+    const resposta = transacao(() => {
+      const anterior = operacaoId && db.prepare('SELECT resposta FROM operacoes WHERE id = ?').get(operacaoId);
+      if (anterior) return JSON.parse(anterior.resposta);
       for (const i of itens) {
         consumirLotes(i.p.id, i.base);
         registrar(i.p.id, 'saida', -i.base, observacao);
       }
+      const lancados = itens.map((i) => ({
+        produto_id: i.p.id, nome: i.p.nome, lancado: i.base, estoque_base: arredondar(buscarProduto(i.p.id).estoque_base),
+      }));
+      const resposta = { ok: true, lancados };
+      if (operacaoId) db.prepare('INSERT INTO operacoes (id, resposta) VALUES (?, ?)').run(operacaoId, JSON.stringify(resposta));
+      return resposta;
     });
-    const lancados = itens.map((i) => ({
-      produto_id: i.p.id, nome: i.p.nome, lancado: i.base, estoque_base: arredondar(buscarProduto(i.p.id).estoque_base),
-    }));
-    res.json({ ok: true, lancados });
+    res.json(resposta);
   });
 
   // ---------- listas prontas ----------

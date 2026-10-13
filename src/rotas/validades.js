@@ -68,18 +68,20 @@ module.exports = function (app) {
     let quantidade = lote.quantidade;
     const vazio = (v) => v == null || String(v).trim() === '';
     if (!vazio(body.quantidade) || (p.fator && !vazio(body.quantidade_menor))) {
-      const r = lerQuantidade(p, body.quantidade, body.quantidade_menor);
+      const r = lerQuantidade(p, body.quantidade, body.quantidade_menor, 6);
       if (r.erro) return res.status(400).json({ erro: r.erro });
       if (r.base <= 0) return res.status(400).json({ erro: 'A quantidade precisa ser maior que zero. Para tirar o lote, use Excluir.' });
       quantidade = r.base;
     }
 
-    const diferenca = arredondar(quantidade - lote.quantidade);
+    quantidade = Math.round(quantidade * 1e6) / 1e6;
+    const diferenca = Math.round((quantidade - lote.quantidade) * 1e6) / 1e6;
+    const mudouQuantidade = Math.abs(diferenca) >= 1e-6;
     const mudouValidade = validade !== lote.validade;
-    if (!diferenca && !mudouValidade) return res.json({ ok: true, mudou: false });
+    if (!mudouQuantidade && !mudouValidade) return res.json({ ok: true, mudou: false });
 
     const partes = [];
-    if (diferenca) partes.push(`${nomeLote(lote.validade)} corrigido: ${formatar(lote.quantidade, p)} → ${formatar(quantidade, p)}`);
+    if (mudouQuantidade) partes.push(`${nomeLote(lote.validade)} corrigido: ${formatar(lote.quantidade, p)} → ${formatar(quantidade, p)}`);
     if (mudouValidade) partes.push(`validade ${dataBr(lote.validade)} → ${dataBr(validade)}`);
     transacao(() => {
       db.prepare('UPDATE lotes SET quantidade = ?, validade = ? WHERE id = ?').run(quantidade, validade, lote.id);

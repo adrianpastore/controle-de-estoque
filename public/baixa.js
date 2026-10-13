@@ -142,10 +142,30 @@ async function confirmarBaixaRapida(form, item) {
 
 const CHAVE_CARRINHO = 'baixa-carrinho';
 
+function novoIdOperacao() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function atualizarItemCarrinho(i, p) {
+  const antigo = Number(i.fator) || 1;
+  const atual = Number(p.fator) || 1;
+  let quantidade = i.quantidade;
+  let menor = i.quantidade_menor;
+  if ((antigo === 1) !== (atual === 1)) {
+    if (atual === 1) {
+      const ler = v => Number(String(v ?? '').replace(',', '.')) || 0;
+      quantidade = String(Math.round((ler(quantidade) + ler(menor) / antigo) * 1000) / 1000).replace('.', ',');
+    }
+    menor = '';
+  }
+  return { ...itemDoProduto(p), quantidade, quantidade_menor: menor };
+}
+
 function lerCarrinho() {
   try {
     const c = JSON.parse(localStorage.getItem(CHAVE_CARRINHO));
-    if (c && Array.isArray(c.itens)) return { itens: c.itens, observacao: String(c.observacao || '') };
+    if (c && Array.isArray(c.itens)) return { itens: c.itens, observacao: String(c.observacao || ''), operacao_id: c.operacao_id, envio: c.envio };
   } catch {}
   return { itens: [], observacao: '' };
 }
@@ -160,7 +180,7 @@ PAGINAS.baixa = async () => {
   ]);
   const antes = carrinho.itens.length;
   carrinho.itens = carrinho.itens
-    .map((i, k) => (atuais[k] ? { ...itemDoProduto(atuais[k]), quantidade: i.quantidade, quantidade_menor: i.quantidade_menor } : null))
+    .map((i, k) => (atuais[k] ? atualizarItemCarrinho(i, atuais[k]) : null))
     .filter(Boolean);
   if (carrinho.itens.length < antes) avisar('Produto excluído foi tirado da baixa', 'erro');
   guardarCarrinho(carrinho);
@@ -192,7 +212,11 @@ PAGINAS.baixa = async () => {
   const elErro = document.getElementById('baixa-erro');
   const btConfirmar = document.getElementById('confirmar-baixa');
 
-  const salvar = () => guardarCarrinho(carrinho);
+  const salvar = () => {
+    delete carrinho.operacao_id;
+    delete carrinho.envio;
+    guardarCarrinho(carrinho);
+  };
   const desenhar = () => {
     const n = carrinho.itens.length;
     document.getElementById('titulo-carrinho').textContent = `Para dar baixa (${n})`;
@@ -247,10 +271,13 @@ PAGINAS.baixa = async () => {
     btConfirmar.disabled = true;
     elErro.hidden = true;
     elCarrinho.querySelectorAll('.carrinho-item').forEach((l) => { l.classList.remove('falta'); l.querySelector('.falta-texto').textContent = ''; });
-    const corpo = {
+    carrinho.operacao_id ||= novoIdOperacao();
+    const corpo = carrinho.envio ||= {
+      operacao_id: carrinho.operacao_id,
       itens: carrinho.itens.map((i) => ({ produto_id: i.produto_id, quantidade: i.quantidade, quantidade_menor: i.quantidade_menor })),
       observacao: carrinho.observacao,
     };
+    guardarCarrinho(carrinho);
     // fetch direto (e não api()) para receber a lista dos que não têm estoque
     let r, resposta;
     try {
@@ -277,7 +304,7 @@ PAGINAS.baixa = async () => {
       linha.classList.add('falta');
       linha.querySelector('.falta-texto').textContent = `Pediu ${f.pedido}, só tem ${f.tem}`;
     }
-    avisar('Nada foi lançado', 'erro');
+    avisar(r ? 'Nada foi lançado' : 'Não foi possível confirmar a baixa. Tente de novo.', 'erro');
     btConfirmar.disabled = false;
   };
 
@@ -379,6 +406,8 @@ PAGINAS.lista = async (id) => {
   document.getElementById('usar-na-baixa').onclick = () => {
     const carrinho = lerCarrinho();
     for (const i of itens) juntarItem(carrinho.itens, { ...i });
+    delete carrinho.operacao_id;
+    delete carrinho.envio;
     guardarCarrinho(carrinho);
     location.hash = '#/baixa';
   };

@@ -269,7 +269,7 @@ async function baixarNota(chaveTexto, opcoes = {}) {
 
   const enviar = opcoes.enviar || ((url, soap, acao) => enviarSoap(url, soap, acao, cert, config));
   const consultar = async () => {
-    const r = lerRespostaDistribuicao(await enviar(URL_DISTRIBUICAO, montarConsultaChave({ chave, cnpj: config.cnpj, uf: config.uf, ambiente: config.ambiente }),
+    const r = lerRespostaDistribuicao(await enviar(escolherUrl('distribuicao', config.ambiente), montarConsultaChave({ chave, cnpj: config.cnpj, uf: config.uf, ambiente: config.ambiente }),
       `${WSDL_DISTRIBUICAO}/nfeDistDFeInteresse`));
     if (r.cStat === '656') bloqueadoAte = Date.now() + 60 * 60 * 1000;
     return r;
@@ -286,7 +286,8 @@ async function baixarNota(chaveTexto, opcoes = {}) {
 
     // Só veio o resumo: manda a ciência da operação e consulta mais uma vez.
     const evento = assinarEvento(montarEventoCiencia({ chave, cnpj: config.cnpj, ambiente: config.ambiente }), cert.chavePem, cert.certPem);
-    const re = lerRespostaEvento(await enviar(URL_EVENTO, montarSoapEvento(evento), `${WSDL_EVENTO}/nfeRecepcaoEvento`));
+    // operação do WSDL do Ambiente Nacional (nfeRecepcaoEventoNF): confirmar no 1º teste real
+    const re = lerRespostaEvento(await enviar(escolherUrl('evento', config.ambiente), montarSoapEvento(evento), `${WSDL_EVENTO}/nfeRecepcaoEventoNF`));
     // 135/136 = evento registrado; 573 = a ciência já tinha sido enviada antes
     if (re.cStat !== '128' || !['135', '136', '573'].includes(re.eventoCStat)) {
       return { erro: `A SEFAZ não aceitou a ciência da operação: ${re.eventoMotivo || re.xMotivo} (código ${re.eventoCStat || re.cStat}).` };
@@ -328,7 +329,14 @@ function situacao() {
 
 const zerarBloqueio = () => { bloqueadoAte = 0; cienciaEnviada.clear(); }; // só para os testes
 
-module.exports = {
+function escolherUrl(servico, ambiente = 1) {
+  if (Number(ambiente) === 2) return servico === 'evento'
+    ? 'https://hom1.nfe.fazenda.gov.br/NFeRecepcaoEvento4/NFeRecepcaoEvento4.asmx'
+    : 'https://hom1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx';
+  return servico === 'evento' ? URL_EVENTO : URL_DISTRIBUICAO;
+}
+
+module.exports = { escolherUrl,
   lerConfig, abrirCertificado, montarConsultaChave, montarEventoCiencia, assinarEvento, montarSoapEvento,
   lerRespostaDistribuicao, lerRespostaEvento, explicar, baixarNota, situacao, dataHoraComFuso, zerarBloqueio,
   URL_DISTRIBUICAO, URL_EVENTO,

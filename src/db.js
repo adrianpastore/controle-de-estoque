@@ -61,6 +61,12 @@ CREATE TABLE IF NOT EXISTS empresas (
 );
 `);
 
+db.exec(`CREATE TABLE IF NOT EXISTS operacoes (
+  id TEXT PRIMARY KEY,
+  criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+  resposta TEXT NOT NULL
+);`);
+
 // Migração: bancos criados antes das empresas ganham a coluna e a separação inicial.
 const temEmpresa = db.prepare('PRAGMA table_info(produtos)').all().some((c) => c.name === 'empresa_id');
 if (!temEmpresa) {
@@ -141,7 +147,9 @@ const sqlMov = db.prepare("SELECT sql FROM sqlite_master WHERE name = 'movimenta
 if (!sqlMov.includes("'perda'")) {
   backupAntes('migracao-movimentacoes');
   db.exec('PRAGMA foreign_keys = OFF');
-  db.exec(`BEGIN;
+  db.exec('BEGIN');
+  try {
+    db.exec(`
     CREATE TABLE movimentacoes_nova (
       id          INTEGER PRIMARY KEY,
       produto_id  INTEGER NOT NULL REFERENCES produtos(id),
@@ -156,9 +164,14 @@ if (!sqlMov.includes("'perda'")) {
       SELECT id, produto_id, tipo, quantidade, observacao, usuario, criado_em FROM movimentacoes;
     DROP TABLE movimentacoes;
     ALTER TABLE movimentacoes_nova RENAME TO movimentacoes;
-    CREATE INDEX IF NOT EXISTS idx_mov_produto ON movimentacoes(produto_id);
-    COMMIT;`);
-  db.exec('PRAGMA foreign_keys = ON');
+    CREATE INDEX IF NOT EXISTS idx_mov_produto ON movimentacoes(produto_id);`);
+    db.exec('COMMIT');
+  } catch (e) {
+    db.exec('ROLLBACK'); // o banco fica como estava; o backup também está em dados/backup
+    throw e;
+  } finally {
+    db.exec('PRAGMA foreign_keys = ON');
+  }
 }
 
 const colunasLote = db.prepare('PRAGMA table_info(lotes)').all().map((c) => c.name);

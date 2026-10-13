@@ -300,6 +300,8 @@ async function paginaNota(id) {
       ...it,
       acao: s.acao,
       origem: s.origem,
+      aviso: s.aviso,
+      conversaoConfirmada: !s.aviso,
       produto: s.produto || null,
       multiplicador: mult,
       emCaixas: !!(s.produto?.fator && mult >= s.produto.fator && arred(mult / s.produto.fator) % 1 === 0),
@@ -414,6 +416,7 @@ async function paginaNota(id) {
   lista.onchange = async (e) => {
     const it = acharItem(e.target);
     if (!it) return;
+    if (e.target.matches('.nfe-confirmar-conversao')) it.conversaoConfirmada = e.target.checked;
     if (e.target.matches('.nfe-em')) {
       // trocou entre caixa e unidade: o número digitado continua o mesmo, muda o que ele quer dizer
       const v = lerNum(lista.querySelector(`[data-n="${it.n}"] .nfe-mult`).value);
@@ -440,6 +443,8 @@ async function paginaNota(id) {
 
   const botao = document.getElementById('nfe-lancar');
   botao.onclick = async () => {
+    const conferir = itens.find(it => it.acao === 'produto' && !it.conversaoConfirmada);
+    if (conferir) return avisar(`Item ${conferir.n}: confirme a conversão`, 'erro');
     const falta = itens.find((it) => !it.acao);
     if (falta) return avisar(`Item ${falta.n}: escolha o produto, crie um novo ou ignore`, 'erro');
     const ruim = itens.find((it) => it.acao !== 'ignorar' && !(it.multiplicador > 0));
@@ -454,7 +459,7 @@ async function paginaNota(id) {
         method: 'POST',
         body: {
           itens: itens.map((it) => ({
-            n: it.n, acao: it.acao, produto_id: it.produto?.id, multiplicador: it.multiplicador, validade: it.validade || null,
+            n: it.n, acao: it.acao, produto_id: it.produto?.id, fator: it.produto?.fator ?? null, multiplicador: it.multiplicador, validade: it.validade || null,
             novo: it.acao === 'novo' ? it.novo : undefined,
           })),
         },
@@ -529,6 +534,7 @@ function cartaoItem(it) {
         <div class="sub">cód. ${esc(it.codigo)}${it.ean ? ` · EAN ${esc(it.ean)}` : ''} · ${num(it.quantidade)} ${esc(it.unidade)} × ${reais(it.valor_unit, 4)} = ${reais(it.valor_total)}</div>
       </div>
       ${escolha}
+      ${it.aviso && it.acao === 'produto' ? `<p class="selo alerta">${esc(it.aviso)}</p><label><input type="checkbox" class="nfe-confirmar-conversao" ${it.conversaoConfirmada ? 'checked' : ''}> Conferi a conversão</label>` : ''}
       ${conversao}
       <div class="nfe-acoes-item">
         ${botaoAcao('buscar', it.acao === 'produto' ? 'Trocar produto' : 'Escolher produto')}

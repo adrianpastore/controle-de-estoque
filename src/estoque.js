@@ -29,12 +29,13 @@ function formatar(base, p) {
 
 // Lê "quantidade" (na unidade do produto: cx, fardo…) e "quantidade_menor" (unidades soltas, só com fator)
 // e devolve o total na unidade em que os lotes são guardados. { base } ou { erro }.
-function lerQuantidade(p, quantidade, quantidadeMenor) {
+function lerQuantidade(p, quantidade, quantidadeMenor, casas = 3) {
   const ler = (v) => { const s = String(v ?? '').trim(); return s === '' ? null : Number(s.replace(',', '.')); };
   const [maior, menor] = [ler(quantidade), p.fator ? ler(quantidadeMenor) : null];
   if (maior == null && menor == null) return { erro: 'Informe a quantidade' };
   if ([maior, menor].some((n) => n != null && !(Number.isFinite(n) && n >= 0))) return { erro: 'Quantidade inválida' };
-  return { base: arredondar((maior || 0) * (p.fator || 1) + (menor || 0)) };
+  const escala = 10 ** casas;
+  return { base: Math.round(((maior || 0) * (p.fator || 1) + (menor || 0)) * escala) / escala };
 }
 
 // Tira quantidade dos lotes, primeiro os que vencem antes (sem validade por último).

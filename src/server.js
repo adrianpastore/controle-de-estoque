@@ -136,6 +136,9 @@ app.put('/api/produtos/:id', (req, res) => {
       ativo=?, em_falta=?, nao_contado=?, precisa_revisao=?, observacao=?, fator=?, unidade_menor=? WHERE id=?`)
       .run(...Object.values(d), req.params.id);
     if (escala !== 1) {
+      db.prepare(`UPDATE lista_itens SET quantidade = CASE WHEN ? THEN quantidade
+        ELSE ROUND(COALESCE(quantidade, 0) + COALESCE(quantidade_menor, 0) / ?, 3) END,
+        quantidade_menor = NULL WHERE produto_id = ?`).run(d.fator ? 1 : 0, atual.fator || 1, req.params.id);
       for (const t of ['lotes', 'movimentacoes']) {
         db.prepare(`UPDATE ${t} SET quantidade = ROUND(quantidade * ?, 6) WHERE produto_id = ?`).run(escala, req.params.id);
       }

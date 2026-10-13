@@ -1,6 +1,6 @@
 // Leitura do XML da NF-e (nfeProc ou NFe sozinho) e conferência da chave de acesso.
 // Não mexe no banco: só transforma o texto do XML em dados simples.
-const { XMLParser } = require('fast-xml-parser');
+const { XMLParser, XMLValidator } = require('fast-xml-parser');
 
 const leitor = new XMLParser({
   ignoreAttributes: false,
@@ -48,9 +48,10 @@ const dataIso = (v) => (/^\d{4}-\d{2}-\d{2}/.test(texto(v)) ? texto(v).slice(0, 
 function lerNota(xml) {
   let doc;
   try {
+    if (XMLValidator.validate(String(xml || '')) !== true) return { erro: 'XML incompleto ou inválido' };
     doc = lerXml(String(xml || ''));
   } catch {
-    return { erro: 'O arquivo não é um XML válido' };
+    return { erro: 'XML incompleto ou inválido' };
   }
   const nfe = doc?.nfeProc?.NFe || doc?.NFe;
   const inf = nfe?.infNFe;
@@ -60,7 +61,14 @@ function lerNota(xml) {
 
   const ide = inf.ide || {};
   const emit = inf.emit || {};
-  const itens = (inf.det || []).map((d, i) => {
+  const detalhes = inf.det || [];
+  const valores = detalhes.map(d => numero(d.prod?.vProd));
+  const totalProdutos = numero(inf.total?.ICMSTot?.vProd);
+  if (detalhes.some((d, i) => Number(d['@nItem']) !== i + 1) || totalProdutos == null ||
+      valores.some(v => v == null) || Math.abs(valores.reduce((s, v) => s + v, 0) - totalProdutos) > 0.05 + 1e-9) {
+    return { erro: 'XML incompleto ou inválido' };
+  }
+  const itens = detalhes.map((d, i) => {
     const prod = d.prod || {};
     // validade: a primeira que vence entre os lotes informados pelo fornecedor (rastro)
     const validades = (prod.rastro || []).map((r) => dataIso(r.dVal)).filter(Boolean).sort();

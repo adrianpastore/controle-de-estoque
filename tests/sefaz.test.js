@@ -91,7 +91,7 @@ test('lê nfeProc, NFe sozinha, prefixo nfe:, ISO-8859-1 e &amp;', () => {
   assert.strictEqual(c.itens[0].ean, '7890000000013', 'usa o cEANTrib quando o cEAN é SEM GTIN');
   assert.strictEqual(c.itens[0].validade, '2027-02-01', 'dois lotes: vale a validade que vence antes');
 
-  assert.match(lerNota('<html>').erro, /NF-e/);
+  assert.match(lerNota('<html>').erro, /XML/);
   assert.match(lerNota('isto não é xml <').erro, /XML|NF-e/);
   assert.match(lerNota(fixture('nota-lactalis-1.xml').replace('NFe4326', 'NFe4327')).erro, /chave/);
 });
@@ -242,3 +242,18 @@ test('sem configuração: avisa e não tenta a SEFAZ', async () => {
     process.env.CONFIG_SEFAZ = antes;
   }
 });
+
+ test('recusa XML cortado, sequência errada e total diferente', () => {
+  const xml = fixture('nota-lactalis-1.xml');
+  const erro = { erro: 'XML incompleto ou inválido' };
+  assert.deepStrictEqual(lerNota(xml.slice(0, xml.indexOf('</det>') + 6)), erro);
+  assert.deepStrictEqual(lerNota(xml.replace(/<det nItem="2">[\s\S]*?<\/det>/, '')), erro);
+  assert.deepStrictEqual(lerNota(xml.replace('nItem="2"', 'nItem="3"')), erro);
+  assert.deepStrictEqual(lerNota(xml.replace(/<vProd>[^<]+<\/vProd>/, '<vProd>0</vProd>')), erro);
+ });
+ test('URLs da SEFAZ seguem o ambiente', () => {
+  assert.strictEqual(sefaz.escolherUrl('evento', 1), sefaz.URL_EVENTO);
+  assert.strictEqual(sefaz.escolherUrl('distribuicao', 1), sefaz.URL_DISTRIBUICAO);
+  assert.strictEqual(sefaz.escolherUrl('evento', 2), 'https://hom1.nfe.fazenda.gov.br/NFeRecepcaoEvento4/NFeRecepcaoEvento4.asmx');
+  assert.strictEqual(sefaz.escolherUrl('distribuicao', 2), 'https://hom1.nfe.fazenda.gov.br/NFeDistribuicaoDFe/NFeDistribuicaoDFe.asmx');
+ });
