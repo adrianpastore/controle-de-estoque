@@ -21,7 +21,8 @@ Substituir a planilha "Estoque Padaria" por um sistema simples, usado no celular
 
 - Código: **https://github.com/adrianpastore/controle-de-estoque** (branch `main`). Commit ao fim de cada etapa.
 - **O banco não vai para o git** (`dados/` está no `.gitignore`): os dados reais só existem no **Caixa03**, em `dados/estoque.db`. Em outro PC, `git clone` + `npm install` + `npm start` cria um banco **vazio** (as tabelas se criam sozinhas). Para ter produtos lá, copiar o `estoque.db` do Caixa03 (ou rodar `npm run importar` com a planilha `Estoque Padaria.xlsx`, que também fica fora do git).
-- Mexeu no código em outro PC: commit + push lá, e no Caixa03 `git pull` e reabrir o `iniciar.bat`. As migrações em `src/db.js` rodam sozinhas no banco real ao iniciar (fazer backup antes, se a migração mexer em dados).
+- Mexeu no código em outro PC: commit + push lá, e no Caixa03 só `git pull`. O gancho `.githooks/post-merge` (ligado pelo `iniciar.bat` com `core.hooksPath`) roda `scripts/atualizar.js`: instala as bibliotecas se o `package-lock.json` mudou, mostra a situação do certificado e encerra o servidor; o `iniciar.bat` (em laço) sobe de novo com a versão nova, e as migrações de `src/db.js` rodam sozinhas (com backup automático).
+- Certificado da SEFAZ no Caixa03: `configurar-sefaz.bat` (acha o .pfx ou exporta o do Windows, confere a senha e grava `dados/config.json`).
 - No Caixa03 o git não está no PATH: usar `"C:\Program Files\Git\cmd\git.exe"`.
 
 ## Como rodar
