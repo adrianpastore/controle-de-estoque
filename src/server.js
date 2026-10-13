@@ -2,20 +2,12 @@ const os = require('node:os');
 const path = require('node:path');
 const express = require('express');
 const db = require('./db');
+const { SELECT_PRODUTO, arredondar, formatar, lerQuantidade, consumirLotes, novoLote, registrar, transacao } = require('./estoque');
 
 const PORTA = Number(process.env.PORTA) || 3000;
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
-
-// Estoque atual = soma dos lotes; validade em destaque = a que vence primeiro entre os lotes com saldo.
-// estoque_base = como está nos lotes (unidade menor, se o produto tem fator);
-// estoque = na unidade do produto (cx, fardo…), que é a do mínimo e do Pedir.
-const SELECT_PRODUTO = `
-  SELECT *, estoque_base * 1.0 / COALESCE(fator, 1) AS estoque FROM (SELECT p.*, e.nome AS empresa,
-    COALESCE((SELECT SUM(l.quantidade) FROM lotes l WHERE l.produto_id = p.id), 0) AS estoque_base,
-    (SELECT MIN(l.validade) FROM lotes l WHERE l.produto_id = p.id AND l.quantidade > 0 AND l.validade IS NOT NULL) AS validade_proxima
-  FROM produtos p LEFT JOIN empresas e ON e.id = p.empresa_id)`;
 
 const FILTROS = {
   todos: 'ativo = 1',
@@ -193,84 +185,50 @@ app.put('/api/produtos/:id/empresa', (req, res) => {
   res.json({ ok: true });
 });
 
-const arredondar = (n) => Math.round(n * 1000) / 1000;
-
-// Quantidade guardada nos lotes → texto: "3 cx + 4 und" com fator, "2,5 kg" sem. (Igual a qtdProduto na tela.)
-function formatar(base, p) {
-  const n = (v) => v.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
-  const comUn = (v, un) => `${n(v)}${un ? ' ' + un : ''}`;
-  if (!p.fator) return comUn(base, p.unidade);
-  const sinal = base < 0 ? '−' : '';
-  const total = Math.abs(base);
-  const cheias = Math.floor(arredondar(total / p.fator));
-  const soltas = arredondar(total - cheias * p.fator);
-  const partes = [cheias ? comUn(cheias, p.unidade) : '', soltas ? comUn(soltas, p.unidade_menor) : ''].filter(Boolean);
-  return sinal + (partes.join(' + ') || comUn(0, p.unidade));
-}
-
-// Tira quantidade dos lotes, primeiro os que vencem antes (sem validade por último).
-function consumirLotes(produtoId, quantidade) {
-  let falta = quantidade;
-  const lotes = db.prepare(`SELECT id, quantidade FROM lotes WHERE produto_id = ? AND quantidade > 0
-    ORDER BY validade IS NULL, validade, id`).all(produtoId);
-  const atualizar = db.prepare('UPDATE lotes SET quantidade = ? WHERE id = ?');
-  for (const l of lotes) {
-    if (falta <= 0) break;
-    const tirar = Math.min(l.quantidade, falta);
-    atualizar.run(arredondar(l.quantidade - tirar), l.id);
-    falta = arredondar(falta - tirar);
-  }
-}
-
 // Lançamento manual: entrada (+), saída (−) ou ajuste (contou e arruma para o valor atual).
 // Em movimentacoes a quantidade fica com sinal: saída negativa, ajuste = diferença.
 app.post('/api/produtos/:id/movimentar', (req, res) => {
   const p = db.prepare(`${SELECT_PRODUTO} WHERE id = ?`).get(req.params.id);
   if (!p) return res.status(404).json({ erro: 'Produto não encontrado' });
   const { tipo } = req.body;
-  // quantidade = na unidade do produto (cx, fardo…); quantidade_menor = unidades soltas (só com fator).
-  // Tudo vira a unidade em que os lotes são guardados.
-  const ler = (v) => { const s = String(v ?? '').trim(); return s === '' ? null : Number(s.replace(',', '.')); };
-  const [maior, menor] = [ler(req.body.quantidade), p.fator ? ler(req.body.quantidade_menor) : null];
   const validade = /^\d{4}-\d{2}-\d{2}$/.test(req.body.validade || '') ? req.body.validade : null;
   const observacao = String(req.body.observacao || '').trim() || null;
   if (!['entrada', 'saida', 'ajuste'].includes(tipo)) return res.status(400).json({ erro: 'Tipo inválido' });
-  if (maior == null && menor == null) return res.status(400).json({ erro: 'Informe a quantidade' });
-  if ([maior, menor].some((n) => n != null && !(Number.isFinite(n) && n >= 0))) return res.status(400).json({ erro: 'Quantidade inválida' });
-  const quantidade = arredondar((maior || 0) * (p.fator || 1) + (menor || 0));
+  // quantidade = na unidade do produto (cx, fardo…); quantidade_menor = unidades soltas (só com fator).
+  // Tudo vira a unidade em que os lotes são guardados.
+  const { base: quantidade, erro } = lerQuantidade(p, req.body.quantidade, req.body.quantidade_menor);
+  if (erro) return res.status(400).json({ erro });
   if (tipo !== 'ajuste' && quantidade === 0) return res.status(400).json({ erro: 'A quantidade precisa ser maior que zero' });
   const estoque = arredondar(p.estoque_base);
   if (tipo === 'saida' && quantidade > estoque) {
     return res.status(400).json({ erro: `Só tem ${formatar(estoque, p)} no sistema. Se a contagem está errada, use "Ajustar para".` });
   }
 
-  const novoLote = db.prepare('INSERT INTO lotes (produto_id, quantidade, validade) VALUES (?,?,?)');
-  const registrar = db.prepare('INSERT INTO movimentacoes (produto_id, tipo, quantidade, observacao) VALUES (?,?,?,?)');
-  db.exec('BEGIN');
-  try {
+  transacao(() => {
     if (tipo === 'entrada') {
-      novoLote.run(p.id, quantidade, validade);
-      registrar.run(p.id, 'entrada', quantidade, observacao);
+      novoLote(p.id, quantidade, validade);
+      registrar(p.id, 'entrada', quantidade, observacao);
       db.prepare('UPDATE produtos SET em_falta = 0 WHERE id = ?').run(p.id); // chegou: a marcação manual de pedir sai
     } else if (tipo === 'saida') {
       consumirLotes(p.id, quantidade);
-      registrar.run(p.id, 'saida', -quantidade, observacao);
+      registrar(p.id, 'saida', -quantidade, observacao);
     } else {
       const diferenca = arredondar(quantidade - estoque);
-      if (diferenca > 0) novoLote.run(p.id, diferenca, validade);
+      if (diferenca > 0) novoLote(p.id, diferenca, validade);
       if (diferenca < 0) consumirLotes(p.id, -diferenca);
       const nota = `contou ${formatar(quantidade, p)} (sistema tinha ${formatar(estoque, p)})`;
-      registrar.run(p.id, 'ajuste', diferenca, observacao ? `${nota} — ${observacao}` : nota);
+      registrar(p.id, 'ajuste', diferenca, observacao ? `${nota} — ${observacao}` : nota);
       db.prepare('UPDATE produtos SET nao_contado = 0 WHERE id = ?').run(p.id);
     }
-    db.exec('COMMIT');
-  } catch (e) {
-    db.exec('ROLLBACK');
-    throw e;
-  }
+  });
   const { n } = db.prepare('SELECT COALESCE(SUM(quantidade), 0) n FROM lotes WHERE produto_id = ?').get(p.id);
   res.json({ estoque_base: arredondar(n), lancado: quantidade });
 });
+
+// Cada parte do sistema tem o seu arquivo de rotas em src/rotas/.
+require('./rotas/validades')(app);
+require('./rotas/baixa')(app);
+require('./rotas/nfe')(app);
 
 app.listen(PORTA, '0.0.0.0', () => {
   const ips = Object.values(os.networkInterfaces()).flat()

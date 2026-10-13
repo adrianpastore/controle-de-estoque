@@ -412,16 +412,25 @@ async function paginaProduto(id) {
 }
 
 // ---------- rotas ----------
+// Cada página: PAGINAS[rota] = async (param) => {...}. Os outros arquivos de public/ (validades.js, baixa.js, nfe.js)
+// registram as suas páginas aqui; a primeira rota roda depois que todos os scripts carregaram.
+const PAGINAS = {
+  produtos: () => paginaProdutos(),
+  produto: (param) => (param ? paginaProduto(param) : paginaProdutos()),
+};
+// Rotas que contam como "dentro" de um item do menu (ex.: a ficha do produto fica em Produtos).
+const MENU_PAI = { produto: 'produtos' };
+
 async function rotear() {
   const [, rota, param] = (location.hash || '#/produtos').split('/');
-  document.querySelectorAll('.menu a').forEach((a) => a.classList.toggle('ativo', a.dataset.rota === rota || (rota === 'produto' && a.dataset.rota === 'produtos')));
+  const pagina = PAGINAS[rota] ? rota : 'produtos';
+  document.querySelectorAll('.menu a').forEach((a) => a.classList.toggle('ativo', a.dataset.rota === pagina || a.dataset.rota === MENU_PAI[pagina]));
   try {
-    if (rota === 'produto' && param) await paginaProduto(param);
-    else await paginaProdutos();
+    await PAGINAS[pagina](param);
     window.scrollTo(0, 0);
   } catch (e) {
     app.innerHTML = `<div class="cartao">Não foi possível carregar: ${esc(e.message)}</div>`;
   }
 }
 window.addEventListener('hashchange', rotear);
-rotear();
+window.addEventListener('DOMContentLoaded', rotear);
