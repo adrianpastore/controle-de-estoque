@@ -1,0 +1,9 @@
+#!/bin/sh
+# Roda depois de cada "git pull": instala o que mudou e reinicia o sistema (scripts/atualizar.js).
+# Ligado pelo iniciar.bat (git config core.hooksPath .githooks).
+if command -v node >/dev/null 2>&1; then
+  node scripts/atualizar.js --depois-do-pull
+else
+  "/c/Program Files/nodejs/node.exe" scripts/atualizar.js --depois-do-pull
+fi
+exit 0
