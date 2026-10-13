@@ -81,7 +81,7 @@ const colunas = db.prepare('PRAGMA table_info(produtos)').all().map((c) => c.nam
 if (!colunas.includes('fator')) db.exec('ALTER TABLE produtos ADD COLUMN fator REAL');
 if (!colunas.includes('unidade_menor')) db.exec('ALTER TABLE produtos ADD COLUMN unidade_menor TEXT');
 
-// Cópia do banco antes de uma migração que mexe em dados (VACUUM INTO grava uma cópia consistente, mesmo com WAL).
+// Cópia do banco antes de mexer em dados (migração, contagem) (VACUUM INTO grava uma cópia consistente, mesmo com WAL).
 function backupAntes(motivo) {
   const pasta = path.join(path.dirname(ARQUIVO_BANCO), 'backup');
   fs.mkdirSync(pasta, { recursive: true });
@@ -89,7 +89,8 @@ function backupAntes(motivo) {
   const quando = new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 19).replace(/[T:]/g, '-'); // hora local
   const destino = path.join(pasta, `antes-${motivo}-${quando}.db`);
   db.exec(`VACUUM INTO '${destino.replace(/'/g, "''")}'`);
-  console.log(`Backup feito antes da migração: ${destino}`);
+  console.log(`Backup feito: ${destino}`);
+  return destino;
 }
 
 db.exec(`

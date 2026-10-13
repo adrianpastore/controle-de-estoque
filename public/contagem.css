@@ -1,0 +1,35 @@
+/* Página Contagem. Usa as variáveis de style.css (tons escuros) e os blocos de baixa.css (carrinho, resultados). */
+.contagem-entrada textarea { min-height: 180px; font-family: ui-monospace, Consolas, monospace; font-size: 15px; }
+.contagem-ajuda { margin-top: 10px; color: var(--texto-2); font-size: 14px; }
+.contagem-ajuda summary { cursor: pointer; color: var(--destaque); }
+.contagem-ajuda ul { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.contagem-ajuda b { color: var(--texto); }
+.contagem-arquivo { cursor: pointer; }
+
+.contagem-linha {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 10px 12px; background: var(--painel); border: 1px solid var(--borda); border-radius: var(--raio);
+}
+.contagem-linha.precisa { border-color: #b8923a; }
+.contagem-linha.ignorada { opacity: .55; }
+.contagem-escrito { flex: 1 1 100%; font-size: 13px; color: var(--texto-2); overflow-wrap: anywhere; }
+.contagem-escrito q { color: var(--texto); }
+.contagem-produto { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.contagem-produto .nome { font-weight: 600; overflow-wrap: anywhere; }
+.contagem-produto small { color: var(--texto-2); font-size: 13px; }
+.contagem-produto .selo { align-self: flex-start; }
+.contagem-empresa { color: var(--destaque); }
+.contagem-sugestoes { display: flex; flex-direction: column; gap: 4px; }
+.contagem-busca { margin: 4px 0 0; }
+.contagem-linha .resultados { margin: 0; }
+.contagem-rodape { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.contagem-rodape .falta-texto { flex: 1 1 100%; }
+.contagem-rodape .falta-texto:empty { display: none; }
+.contagem-linha.precisa .falta-texto { color: #f5d68a; }
+
+.contagem-feita { margin-bottom: 8px; }
+.contagem-feita h2 { margin-top: 0; }
+.contagem-feita code { color: var(--texto-2); overflow-wrap: anywhere; }
+.contagem-feito { justify-content: space-between; gap: 12px; }
+.contagem-feito small { color: var(--texto-2); text-align: right; }
+.contagem-feito b { color: var(--texto); }

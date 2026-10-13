@@ -40,11 +40,11 @@ Substituir a planilha "Estoque Padaria" por um sistema simples, usado no celular
 
 ## Estrutura
 
-- `src/server.js`: rotas de produtos, empresas e lançamento manual; carrega as outras de `src/rotas/` (validades, baixa, nfe).
+- `src/server.js`: rotas de produtos, empresas e lançamento manual; carrega as outras de `src/rotas/` (validades, baixa, nfe, contagem).
 - `src/estoque.js`: contas comuns (lotes, formatar, transação). `src/nfe-xml.js`: leitura do XML da NF-e. `src/sefaz.js`: download do XML na SEFAZ com o certificado A1.
 - `src/db.js`: tabelas e migrações (rodam sozinhas ao iniciar).
 - `src/empresas.js`: regra que transforma o texto da coluna Fornecedor em empresa.
-- `public/app.js`, `public/style.css`, `public/index.html`: a tela (lista e ficha do produto, rotas em `PAGINAS`). `public/validades.js`, `public/baixa.js`, `public/nfe.js` (+ `.css`): as outras páginas.
+- `public/app.js`, `public/style.css`, `public/index.html`: a tela (lista e ficha do produto, rotas em `PAGINAS`). `public/validades.js`, `public/baixa.js`, `public/nfe.js`, `public/contagem.js` (+ `.css`): as outras páginas.
 - `tests/`: testes automáticos (`node:test`) e notas fictícias em `tests/fixtures/`.
 - `scripts/importar-planilha.js`, `scripts/separar-empresas.js`.
 - `dados/` (banco, backups, relatório da importação) e a planilha `.xlsx` **não vão para o git**.
@@ -56,6 +56,7 @@ Substituir a planilha "Estoque Padaria" por um sistema simples, usado no celular
 - O texto da quantidade é montado igual em dois lugares: `formatar` (src/server.js) e `qtdProduto` (public/app.js).
 - **Movimentações** guardam a quantidade com sinal: entrada +, saída −, ajuste = diferença ("contou X, sistema tinha Y"), **perda** − (baixa de vencido) e **correcao** = diferença (lote corrigido ou excluído na ficha).
 - **Validades:** na ficha, cada lote tem Corrigir, Excluir e (se vencido) Baixa como vencido. Página **Validades**: vencidos (baixa em todos) e os que vencem em 3/7/15/30 dias.
+- **Contagem (pente fino):** página **Contagem**: escreve ou cola "produto = quantidade", um por linha (ou abre .txt/.csv). `src/contagem.js` acha o produto pelo nome (sem acento, pedaço do nome, erro de uma letra) e separa nome e números ("Coca 600 = 12", "Salame 3 cx 4 und"). Só marca sozinho quando não há dúvida; o resto vai para "Precisa de você" (escolher ou ignorar) e só grava com tudo resolvido. Gravar faz backup (`dados/backup/antes-contagem-…`) e um ajuste por produto (linhas repetidas somam). Produto fora da lista não muda.
 - **Baixa:** botão "− Baixa" em cada produto da lista; página **Baixa** com carrinho de vários produtos (tudo ou nada: se faltar estoque em um, nada é lançado; o carrinho fica no aparelho) e **listas prontas** (`listas`, `lista_itens`).
 - **Entrada pela nota (página Entrada):** importar o XML da NF-e, ou ler a chave pela **foto do DANFE** (código de barras lido no próprio celular com a zxing; a foto não é guardada nem enviada) ou digitada, e baixar o XML na SEFAZ (NFeDistribuicaoDFe, com Ciência da Operação quando só vem o resumo). Na conferência, cada item da nota é ligado a um produto (lembrado em `nfe_associacoes` por CNPJ + código do fornecedor; `multiplicador` na unidade dos lotes) ou ignorado; lançar cria um lote por item com `custo_unit` e `nota_id`. A mesma chave não é lançada duas vezes.
 - **Certificado A1:** `dados/config.json` (fora do git; modelo em `config.exemplo.json`): caminho do .pfx, senha, CNPJ, UF 43. A SEFAZ bloqueia por 1 hora quem consulta demais (erro 656). Situação em `/api/sefaz/status`. **A conexão real com a SEFAZ ainda não foi testada** (só com respostas simuladas): testar no Caixa03.
