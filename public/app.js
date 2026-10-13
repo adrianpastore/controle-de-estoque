@@ -159,6 +159,25 @@ async function paginaProdutos() {
     }
   };
 
+  // Baixa rápida (public/baixa.js): "− Baixa" abre a quantidade no próprio item; confirmar lança a saída.
+  const elLista = document.getElementById('lista');
+  elLista.onclick = (e) => {
+    const item = e.target.closest('.item');
+    if (!item) return;
+    if (e.target.closest('[data-baixa]')) abrirBaixaRapida(item);
+    else if (e.target.closest('[data-baixa-cancelar]')) fecharBaixaRapida(item);
+  };
+  elLista.onsubmit = async (e) => {
+    const item = e.target.closest('.item');
+    if (!item || !e.target.matches('.baixa-rapida')) return;
+    e.preventDefault();
+    const p = await confirmarBaixaRapida(e.target, item);
+    if (!p) return;
+    item.outerHTML = itemDaLista(p);
+    carregarFiltros(); // a baixa pode colocar o produto no filtro Pedir
+    carregarAbas(); // e muda quantos produtos pedir de cada empresa
+  };
+
   const [, opcoes] = await Promise.all([carregarAbas(), api('/api/opcoes')]);
   unidades = [...new Set([...UNIDADES, ...opcoes.unidades])];
   await Promise.all([carregarFiltros(), carregarLista()]);
@@ -259,6 +278,7 @@ function itemDaLista(p) {
           <option value="" ${un ? '' : 'selected'}>unidade…</option>${opcoesUnidade}<option value="outra">+ outra…</option>
         </select>
       </div>
+      <button class="botao-baixa" type="button" data-baixa aria-label="Dar baixa em ${esc(p.nome)}">− Baixa</button>
       ${semEmpresa ? `<select class="escolher-empresa" data-id="${p.id}" aria-label="Empresa de ${esc(p.nome)}">${opcoesSeletor()}</select>` : ''}
     </div>`;
 }

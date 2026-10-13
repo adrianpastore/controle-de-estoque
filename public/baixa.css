@@ -1,1 +1,81 @@
 /* Estilos de baixa. Usa as variáveis de style.css (tons escuros). */
+
+/* Botão "− Baixa" em cada produto da lista: confortável ao toque */
+.botao-baixa {
+  flex: none; min-height: 40px; padding: 8px 14px; cursor: pointer; font-weight: 600;
+  background: #4a2523; border: 1px solid var(--perigo); border-radius: 8px; color: #ffb3ad;
+}
+.botao-baixa:hover { filter: brightness(1.15); }
+
+/* Campos de quantidade (cx + soltas) */
+.qtd-campo { display: inline-flex; align-items: center; gap: 6px; color: var(--texto-2); font-size: 14px; }
+.qtd-campo input {
+  width: 72px; min-height: 40px; padding: 8px; text-align: right;
+  background: var(--fundo); border: 1px solid var(--borda); border-radius: 8px;
+}
+.qtd-campo input:focus, .baixa-usar-lista select:focus, .lista-nova input:focus { outline: 2px solid var(--destaque); outline-offset: -1px; }
+
+/* Baixa rápida aberta dentro do item da lista */
+.baixa-rapida {
+  flex: 1 1 100%; padding: 10px 12px; margin-top: 2px;
+  background: var(--painel-2); border: 1px solid var(--perigo); border-radius: 8px;
+}
+.baixa-rapida-topo { font-size: 13px; color: var(--texto-2); margin-bottom: 8px; overflow-wrap: anywhere; }
+.baixa-rapida-topo b { color: var(--texto); }
+.baixa-rapida-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.baixa-rapida-linha .botao { min-height: 40px; }
+.falta-texto { color: #ffb3ad; font-size: 13px; }
+.falta-texto:empty { display: none; }
+
+/* Página Baixa e listas prontas */
+.topo-dica { margin: -6px 0 14px; }
+.baixa-usar-lista { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px; margin-bottom: 12px; }
+.baixa-usar-lista select {
+  flex: 1 1 200px; min-height: 42px; padding: 8px 10px;
+  background: var(--fundo); border: 1px solid var(--borda); border-radius: 8px;
+}
+.resultados { display: flex; flex-direction: column; gap: 4px; margin: -6px 0 12px; }
+.resultado {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%;
+  min-height: 44px; padding: 8px 14px; text-align: left; cursor: pointer;
+  background: var(--painel-2); border: 1px solid var(--borda); border-radius: 8px;
+}
+.resultado:hover { border-color: var(--destaque); }
+.resultado span { overflow-wrap: anywhere; }
+.resultado small { color: var(--texto-2); white-space: nowrap; }
+
+.carrinho { display: flex; flex-direction: column; gap: 6px; }
+.carrinho-item {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 10px 12px; background: var(--painel); border: 1px solid var(--borda); border-radius: var(--raio);
+}
+.carrinho-item.falta { border-color: var(--perigo); }
+.carrinho-info { flex: 1 1 200px; min-width: 0; }
+.carrinho-info .nome { font-weight: 600; overflow-wrap: anywhere; }
+.carrinho-info small { color: var(--texto-2); font-size: 13px; margin-right: 6px; }
+.carrinho-qtd { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.botao-tirar {
+  flex: none; width: 40px; height: 40px; cursor: pointer;
+  background: none; border: 1px solid var(--borda); border-radius: 8px; color: var(--texto-2);
+}
+.botao-tirar:hover { border-color: var(--perigo); color: #ffb3ad; }
+
+.baixa-obs { margin-top: 14px; }
+.baixa-erro {
+  margin-top: 12px; padding: 10px 14px; border-radius: 8px;
+  background: #4a2523; border: 1px solid var(--perigo); color: #ffb3ad;
+}
+
+.lista-nova { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; margin-bottom: 12px; }
+.lista-nova input {
+  flex: 1 1 200px; min-height: 42px; padding: 8px 11px;
+  background: var(--fundo); border: 1px solid var(--borda); border-radius: 8px;
+}
+.listas-prontas .item { justify-content: space-between; min-height: 48px; }
+.listas-prontas small { color: var(--texto-2); white-space: nowrap; }
+.lista-nome { margin-bottom: 12px; }
+
+@media (max-width: 520px) {
+  .baixa-rapida-linha .botao { flex: 1 1 auto; }
+  .carrinho-qtd { flex: 1 1 auto; }
+}
