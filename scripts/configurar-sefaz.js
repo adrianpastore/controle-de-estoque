@@ -24,6 +24,7 @@ async function lerLinha(texto) {
 }
 const perguntar = async (texto) => (await lerLinha(texto)).trim();
 async function perguntarSenha(texto) {
+  console.log('(por segurança, a senha não aparece enquanto você digita: digite normalmente e aperte Enter)');
   escondido = true;
   try {
     return await lerLinha(texto);
